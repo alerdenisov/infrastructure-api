@@ -390,3 +390,17 @@ Temporary Items
 docker-compose.yml
 .env
 dist
+
+
+# Nodes
+data/parity/cache
+data/parity/chains
+data/parity/dapps
+data/parity/network
+data/parity/signer
+data/parity/jsonrpc.ipc
+
+data/rethinkdb
+
+data/eos/mnt
+data/eos/mongo
