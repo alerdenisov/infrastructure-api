@@ -1,0 +1,647 @@
+parity_1     | Parity. Ethereum Client.
+parity_1     | 	By Wood/Paronyan/Kotewicz/Drwięga/Volf et al.
+parity_1     | 	Copyright 2015, 2016, 2017, 2018 Parity Technologies (UK) Ltd
+parity_1     |
+parity_1     | parity [options]
+parity_1     | parity [options] ui
+parity_1     | parity [options] dapp <PATH>
+parity_1     | parity [options] daemon <PID-FILE>
+parity_1     | parity [options] account new
+parity_1     | parity [options] account list
+parity_1     | parity [options] account import <PATH>...
+parity_1     | parity [options] wallet import <PATH>
+parity_1     | parity [options] import --format=[FORMAT] [FILE]
+parity_1     | parity [options] export blocks --format=[FORMAT] --from=[BLOCK] --to=[BLOCK] [FILE]
+parity_1     | parity [options] export state [--no-storage] [--no-code] --min-balance=[WEI] --max-balance=[WEI] --at=[BLOCK]
+parity_1     |     --format=[FORMAT] [FILE]
+parity_1     | parity [options] signer new-token
+parity_1     | parity [options] signer list
+parity_1     | parity [options] signer sign [ID]
+parity_1     | parity [options] signer reject <ID>
+parity_1     | parity [options] snapshot --at=[BLOCK] <FILE>
+parity_1     | parity [options] restore [FILE]
+parity_1     | parity [options] tools hash <FILE>
+parity_1     | parity [options] db kill
+parity_1     |
+parity_1     | Operating Options:
+parity_1     |     --public-node
+parity_1     |         Start Parity as a public web server. Account storage and transaction signing will be delegated to the UI.
+parity_1     |
+parity_1     |     --no-download
+parity_1     |         Normally new releases will be downloaded ready for updating. This disables it. Not recommended.
+parity_1     |
+parity_1     |     --no-consensus
+parity_1     |         Force the binary to run even if there are known issues regarding consensus. Not recommended.
+parity_1     |
+parity_1     |     --light
+parity_1     |         Experimental: run in light client mode. Light clients synchronize a bare minimum of data and fetch necessary
+parity_1     |         data on-demand from the network. Much lower in storage, potentially higher in bandwidth. Has no effect with
+parity_1     |         subcommands.
+parity_1     |
+parity_1     |     --force-direct
+parity_1     |         Run the originally installed version of Parity, ignoring any updates that have since been installed.
+parity_1     |
+parity_1     |     --mode=[MODE]
+parity_1     |         Set the operating mode. MODE can be one of: last - Uses the last-used mode, active if none; active - Parity
+parity_1     |         continuously syncs the chain; passive - Parity syncs initially, then sleeps and wakes regularly to resync; dark
+parity_1     |         - Parity syncs only when the RPC is active; offline - Parity doesn't sync. (default: last)
+parity_1     |
+parity_1     |     --mode-timeout=[SECS]
+parity_1     |         Specify the number of seconds before inactivity timeout occurs when mode is dark or passive (default: 300)
+parity_1     |
+parity_1     |     --mode-alarm=[SECS]
+parity_1     |         Specify the number of seconds before auto sleep reawake timeout occurs when mode is passive (default: 3600)
+parity_1     |
+parity_1     |     --auto-update=[SET]
+parity_1     |         Set a releases set to automatically update and install. SET can be one of: all - All updates in the our release
+parity_1     |         track; critical - Only consensus/security updates; none - No updates will be auto-installed. (default: critical)
+parity_1     |
+parity_1     |     --release-track=[TRACK]
+parity_1     |         Set which release track we should use for updates. TRACK can be one of: stable - Stable releases; beta - Beta
+parity_1     |         releases; nightly - Nightly releases (unstable); testing - Testing releases (do not use); current - Whatever
+parity_1     |         track this executable was released on. (default: current)
+parity_1     |
+parity_1     |     --chain=[CHAIN]
+parity_1     |         Specify the blockchain type. CHAIN may be either a JSON chain specification file or olympic, frontier,
+parity_1     |         homestead, mainnet, morden, ropsten, classic, expanse, musicoin, ellaism, testnet, kovan or dev. (default:
+parity_1     |         foundation)
+parity_1     |
+parity_1     |     --keys-path=[PATH]
+parity_1     |         Specify the path for JSON key files to be found (default: $BASE/keys)
+parity_1     |
+parity_1     |     --identity=[NAME]
+parity_1     |         Specify your node's name. (default: )
+parity_1     |
+parity_1     |     -d, --base-path=[PATH]
+parity_1     |         Specify the base data storage path.
+parity_1     |
+parity_1     |     --db-path=[PATH]
+parity_1     |         Specify the database directory path
+parity_1     |
+parity_1     | Convenience options:
+parity_1     |     --unsafe-expose
+parity_1     |         All servers will listen on external interfaces and will be remotely accessible. It's equivalent with setting the
+parity_1     |         following: --{{ws,jsonrpc,ui,ipfs,secret_store,stratum}}-interface=all --*-hosts=all    This option is UNSAFE
+parity_1     |         and should be used with great care!
+parity_1     |
+parity_1     |     -c, --config=[CONFIG]
+parity_1     |         Specify a configuration. CONFIG may be either a configuration file or a preset: dev, insecure, dev-insecure,
+parity_1     |         mining, or non-standard-ports. (default: $BASE/config.toml)
+parity_1     |
+parity_1     |     --ports-shift=[SHIFT]
+parity_1     |         Add SHIFT to all port numbers Parity is listening on. Includes network port and all servers (RPC, WebSockets,
+parity_1     |         UI, IPFS, SecretStore). (default: 0)
+parity_1     |
+parity_1     | Account options:
+parity_1     |     --no-hardware-wallets
+parity_1     |         Disables hardware wallet support.
+parity_1     |
+parity_1     |     --fast-unlock
+parity_1     |         Use drasticly faster unlocking mode. This setting causes raw secrets to be stored unprotected in memory, so use
+parity_1     |         with care.
+parity_1     |
+parity_1     |     --keys-iterations=[NUM]
+parity_1     |         Specify the number of iterations to use when deriving key from the password (bigger is more secure) (default:
+parity_1     |         10240)
+parity_1     |
+parity_1     |     --accounts-refresh=[TIME]
+parity_1     |         Specify the cache time of accounts read from disk. If you manage thousands of accounts set this to 0 to disable
+parity_1     |         refresh. (default: 5)
+parity_1     |
+parity_1     |     --unlock=[ACCOUNTS]
+parity_1     |         Unlock ACCOUNTS for the duration of the execution. ACCOUNTS is a comma-delimited list of addresses. Implies
+parity_1     |         --no-ui.
+parity_1     |
+parity_1     |     --password=[FILE]...
+parity_1     |         Provide a file containing a password for unlocking an account. Leading and trailing whitespace is trimmed.
+parity_1     |         (default: [])
+parity_1     |
+parity_1     | UI options:
+parity_1     |     --force-ui
+parity_1     |         Enable Trusted UI WebSocket endpoint, even when --unlock is in use.
+parity_1     |
+parity_1     |     --no-ui
+parity_1     |         Disable Trusted UI WebSocket endpoint.
+parity_1     |
+parity_1     |     --ui-no-validation
+parity_1     |         Disable Origin and Host headers validation for Trusted UI. WARNING: INSECURE. Used only for development.
+parity_1     |
+parity_1     |     --ui-interface=[IP]
+parity_1     |         Specify the hostname portion of the Trusted UI server, IP should be an interface's IP address, or local.
+parity_1     |         (default: local)
+parity_1     |
+parity_1     |     --ui-hosts=[HOSTS]
+parity_1     |         List of allowed Host header values. This option will validate the Host header sent by the browser, it is
+parity_1     |         additional security against some attack vectors. Special options: "all", "none",. (default: none)
+parity_1     |
+parity_1     |     --ui-path=[PATH]
+parity_1     |         Specify directory where Trusted UIs tokens should be stored. (default: $BASE/signer)
+parity_1     |
+parity_1     |     --ui-port=[PORT]
+parity_1     |         Specify the port of Trusted UI server. (default: 8180)
+parity_1     |
+parity_1     | Networking options:
+parity_1     |     --no-warp
+parity_1     |         Disable syncing from the snapshot over the network.
+parity_1     |
+parity_1     |     --no-discovery
+parity_1     |         Disable new peer discovery.
+parity_1     |
+parity_1     |     --reserved-only
+parity_1     |         Connect only to reserved nodes.
+parity_1     |
+parity_1     |     --no-ancient-blocks
+parity_1     |         Disable downloading old blocks after snapshot restoration or warp sync.
+parity_1     |
+parity_1     |     --no-serve-light
+parity_1     |         Disable serving of light peers.
+parity_1     |
+parity_1     |     --port=[PORT]
+parity_1     |         Override the port on which the node should listen. (default: 30303)
+parity_1     |
+parity_1     |     --min-peers=[NUM]
+parity_1     |         Try to maintain at least NUM peers. (default: 25)
+parity_1     |
+parity_1     |     --max-peers=[NUM]
+parity_1     |         Allow up to NUM peers. (default: 50)
+parity_1     |
+parity_1     |     --snapshot-peers=[NUM]
+parity_1     |         Allow additional NUM peers for a snapshot sync. (default: 0)
+parity_1     |
+parity_1     |     --nat=[METHOD]
+parity_1     |         Specify method to use for determining public address. Must be one of: any, none, upnp, extip:<IP>. (default:
+parity_1     |         any)
+parity_1     |
+parity_1     |     --allow-ips=[FILTER]
+parity_1     |         Filter outbound connections. Must be one of: private - connect to private network IP addresses only; public -
+parity_1     |         connect to public network IP addresses only; all - connect to any IP address. (default: all)
+parity_1     |
+parity_1     |     --max-pending-peers=[NUM]
+parity_1     |         Allow up to NUM pending connections. (default: 64)
+parity_1     |
+parity_1     |     --network-id=[INDEX]
+parity_1     |         Override the network identifier from the chain we are on.
+parity_1     |
+parity_1     |     --bootnodes=[NODES]
+parity_1     |         Override the bootnodes from our chain. NODES should be comma-delimited enodes.
+parity_1     |
+parity_1     |     --node-key=[KEY]
+parity_1     |         Specify node secret key, either as 64-character hex string or input to SHA3 operation.
+parity_1     |
+parity_1     |     --reserved-peers=[FILE]
+parity_1     |         Provide a file containing enodes, one per line. These nodes will always have a reserved slot on top of the
+parity_1     |         normal maximum peers.
+parity_1     |
+parity_1     | API and console options – RPC:
+parity_1     |     --no-jsonrpc
+parity_1     |         Disable the JSON-RPC API server.
+parity_1     |
+parity_1     |     --jsonrpc-port=[PORT]
+parity_1     |         Specify the port portion of the JSONRPC API server. (default: 8545)
+parity_1     |
+parity_1     |     --jsonrpc-interface=[IP]
+parity_1     |         Specify the hostname portion of the JSONRPC API server, IP should be an interface's IP address, or all (all
+parity_1     |         interfaces) or local. (default: local)
+parity_1     |
+parity_1     |     --jsonrpc-apis=[APIS]
+parity_1     |         Specify the APIs available through the JSONRPC interface. APIS is a comma-delimited list of API name. Possible
+parity_1     |         name are all, safe, web3, eth, net, personal, parity, parity_set, traces, rpc, parity_accounts. You can also
+parity_1     |         disable a specific API by putting '-' in the front: all,-personal. (default:
+parity_1     |         web3,eth,pubsub,net,parity,parity_pubsub,traces,rpc,shh,shh_pubsub)
+parity_1     |
+parity_1     |     --jsonrpc-hosts=[HOSTS]
+parity_1     |         List of allowed Host header values. This option will validate the Host header sent by the browser, it is
+parity_1     |         additional security against some attack vectors. Special options: "all", "none",. (default: none)
+parity_1     |
+parity_1     |     --jsonrpc-threads=[THREADS]
+parity_1     |         Turn on additional processing threads in all RPC servers. Setting this to non-zero value allows parallel cpu
+parity_1     |         -heavy queries execution. (default: 4)
+parity_1     |
+parity_1     |     --jsonrpc-cors=[URL]
+parity_1     |         Specify CORS header for JSON-RPC API responses. Special options: "all", "none". (default: none)
+parity_1     |
+parity_1     |     --jsonrpc-server-threads=[NUM]
+parity_1     |         Enables multiple threads handling incoming connections for HTTP JSON-RPC server.
+parity_1     |
+parity_1     | API and console options – WebSockets:
+parity_1     |     --no-ws
+parity_1     |         Disable the WebSockets server.
+parity_1     |
+parity_1     |     --ws-port=[PORT]
+parity_1     |         Specify the port portion of the WebSockets server. (default: 8546)
+parity_1     |
+parity_1     |     --ws-interface=[IP]
+parity_1     |         Specify the hostname portion of the WebSockets server, IP should be an interface's IP address, or all (all
+parity_1     |         interfaces) or local. (default: local)
+parity_1     |
+parity_1     |     --ws-apis=[APIS]
+parity_1     |         Specify the APIs available through the WebSockets interface. APIS is a comma-delimited list of API name.
+parity_1     |         Possible name are web3, eth, pubsub, net, personal, parity, parity_set, traces, rpc, parity_accounts.. (default:
+parity_1     |         web3,eth,pubsub,net,parity,parity_pubsub,traces,rpc,shh,shh_pubsub)
+parity_1     |
+parity_1     |     --ws-origins=[URL]
+parity_1     |         Specify Origin header values allowed to connect. Special options: "all", "none". (default: chrome
+parity_1     |         -extension://*,moz-extension://*)
+parity_1     |
+parity_1     |     --ws-hosts=[HOSTS]
+parity_1     |         List of allowed Host header values. This option will validate the Host header sent by the browser, it is
+parity_1     |         additional security against some attack vectors. Special options: "all", "none". (default: none)
+parity_1     |
+parity_1     | API and console options – IPC:
+parity_1     |     --no-ipc
+parity_1     |         Disable JSON-RPC over IPC service.
+parity_1     |
+parity_1     |     --ipc-path=[PATH]
+parity_1     |         Specify custom path for JSON-RPC over IPC service. (default: $BASE/jsonrpc.ipc)
+parity_1     |
+parity_1     |     --ipc-apis=[APIS]
+parity_1     |         Specify custom API set available via JSON-RPC over IPC. (default:
+parity_1     |         web3,eth,pubsub,net,parity,parity_pubsub,parity_accounts,traces,rpc,shh,shh_pubsub)
+parity_1     |
+parity_1     | API and console options – Dapps:
+parity_1     |     --no-dapps
+parity_1     |         Disable the Dapps server (e.g. status page).
+parity_1     |
+parity_1     |     --dapps-path=[PATH]
+parity_1     |         Specify directory where dapps should be installed. (default: $BASE/dapps)
+parity_1     |
+parity_1     | API and console options – IPFS:
+parity_1     |     --ipfs-api
+parity_1     |         Enable IPFS-compatible HTTP API.
+parity_1     |
+parity_1     |     --ipfs-api-port=[PORT]
+parity_1     |         Configure on which port the IPFS HTTP API should listen. (default: 5001)
+parity_1     |
+parity_1     |     --ipfs-api-interface=[IP]
+parity_1     |         Specify the hostname portion of the IPFS API server, IP should be an interface's IP address or local. (default:
+parity_1     |         local)
+parity_1     |
+parity_1     |     --ipfs-api-hosts=[HOSTS]
+parity_1     |         List of allowed Host header values. This option will validate the Host header sent by the browser, it is
+parity_1     |         additional security against some attack vectors. Special options: "all", "none". (default: none)
+parity_1     |
+parity_1     |     --ipfs-api-cors=[URL]
+parity_1     |         Specify CORS header for IPFS API responses. Special options: "all", "none". (default: none)
+parity_1     |
+parity_1     | Secret store options:
+parity_1     |     --no-secretstore
+parity_1     |         Disable Secret Store functionality.
+parity_1     |
+parity_1     |     --no-secretstore-http
+parity_1     |         Disable Secret Store HTTP API.
+parity_1     |
+parity_1     |     --no-acl-check
+parity_1     |         Disable ACL check (useful for test environments).
+parity_1     |
+parity_1     |     --secretstore-contract=[SOURCE]
+parity_1     |         Secret Store Service contract address source: none, registry (contract address is read from registry) or
+parity_1     |         address. (default: none)
+parity_1     |
+parity_1     |     --secretstore-nodes=[NODES]
+parity_1     |         Comma-separated list of other secret store cluster nodes in form NODE_PUBLIC_KEY_IN_HEX@NODE_IP_ADDR:NODE_PORT.
+parity_1     |         (default: )
+parity_1     |
+parity_1     |     --secretstore-interface=[IP]
+parity_1     |         Specify the hostname portion for listening to Secret Store Key Server internal requests, IP should be an
+parity_1     |         interface's IP address, or local. (default: local)
+parity_1     |
+parity_1     |     --secretstore-port=[PORT]
+parity_1     |         Specify the port portion for listening to Secret Store Key Server internal requests. (default: 8083)
+parity_1     |
+parity_1     |     --secretstore-http-interface=[IP]
+parity_1     |         Specify the hostname portion for listening to Secret Store Key Server HTTP requests, IP should be an interface's
+parity_1     |         IP address, or local. (default: local)
+parity_1     |
+parity_1     |     --secretstore-http-port=[PORT]
+parity_1     |         Specify the port portion for listening to Secret Store Key Server HTTP requests. (default: 8082)
+parity_1     |
+parity_1     |     --secretstore-path=[PATH]
+parity_1     |         Specify directory where Secret Store should save its data. (default: $BASE/secretstore)
+parity_1     |
+parity_1     |     --secretstore-secret=[SECRET]
+parity_1     |         Hex-encoded secret key of this node.
+parity_1     |
+parity_1     |     --secretstore-admin-public=[PUBLIC]
+parity_1     |         Hex-encoded public key of secret store administrator.
+parity_1     |
+parity_1     | Sealing/Mining options:
+parity_1     |     --force-sealing
+parity_1     |         Force the node to author new blocks as if it were always sealing/mining.
+parity_1     |
+parity_1     |     --reseal-on-uncle
+parity_1     |         Force the node to author new blocks when a new uncle block is imported.
+parity_1     |
+parity_1     |     --remove-solved
+parity_1     |         Move solved blocks from the work package queue instead of cloning them. This gives a slightly faster import
+parity_1     |         speed, but means that extra solutions submitted for the same work package will go unused.
+parity_1     |
+parity_1     |     --refuse-service-transactions
+parity_1     |         Always refuse service transactions.
+parity_1     |
+parity_1     |     --infinite-pending-block
+parity_1     |         Pending block will be created with maximal possible gas limit and will execute all transactions in the queue.
+parity_1     |         Note that such block is invalid and should never be attempted to be mined.
+parity_1     |
+parity_1     |     --no-persistent-txqueue
+parity_1     |         Don't save pending local transactions to disk to be restored whenever the node restarts.
+parity_1     |
+parity_1     |     --stratum
+parity_1     |         Run Stratum server for miner push notification.
+parity_1     |
+parity_1     |     --reseal-on-txs=[SET]
+parity_1     |         Specify which transactions should force the node to reseal a block. SET is one of: none - never reseal on new
+parity_1     |         transactions; own - reseal only on a new local transaction; ext - reseal only on a new external transaction; all
+parity_1     |         - reseal on all new transactions. (default: own)
+parity_1     |
+parity_1     |     --reseal-min-period=[MS]
+parity_1     |         Specify the minimum time between reseals from incoming transactions. MS is time measured in milliseconds.
+parity_1     |         (default: 2000)
+parity_1     |
+parity_1     |     --reseal-max-period=[MS]
+parity_1     |         Specify the maximum time since last block to enable force-sealing. MS is time measured in milliseconds.
+parity_1     |         (default: 120000)
+parity_1     |
+parity_1     |     --work-queue-size=[ITEMS]
+parity_1     |         Specify the number of historical work packages which are kept cached lest a solution is found for them later.
+parity_1     |         High values take more memory but result in fewer unusable solutions. (default: 20)
+parity_1     |
+parity_1     |     --relay-set=[SET]
+parity_1     |         Set of transactions to relay. SET may be: cheap - Relay any transaction in the queue (this may include invalid
+parity_1     |         transactions); strict - Relay only executed transactions (this guarantees we don't relay invalid transactions,
+parity_1     |         but means we relay nothing if not mining); lenient - Same as strict when mining, and cheap when not. (default:
+parity_1     |         cheap)
+parity_1     |
+parity_1     |     --usd-per-tx=[USD]
+parity_1     |         Amount of USD to be paid for a basic transaction. The minimum gas price is set accordingly. (default: 0.0025)
+parity_1     |
+parity_1     |     --usd-per-eth=[SOURCE]
+parity_1     |         USD value of a single ETH. SOURCE may be either an amount in USD, a web service or 'auto' to use each web
+parity_1     |         service in turn and fallback on the last known good value. (default: auto)
+parity_1     |
+parity_1     |     --price-update-period=[T]
+parity_1     |         T will be allowed to pass between each gas price update. T may be daily, hourly, a number of seconds, or a time
+parity_1     |         string of the form "2 days", "30 minutes" etc.. (default: hourly)
+parity_1     |
+parity_1     |     --gas-floor-target=[GAS]
+parity_1     |         Amount of gas per block to target when sealing a new block. (default: 4700000)
+parity_1     |
+parity_1     |     --gas-cap=[GAS]
+parity_1     |         A cap on how large we will raise the gas limit per block due to transaction volume. (default: 6283184)
+parity_1     |
+parity_1     |     --tx-queue-mem-limit=[MB]
+parity_1     |         Maximum amount of memory that can be used by the transaction queue. Setting this parameter to 0 disables
+parity_1     |         limiting. (default: 2)
+parity_1     |
+parity_1     |     --tx-queue-size=[LIMIT]
+parity_1     |         Maximum amount of transactions in the queue (waiting to be included in next block). (default: 8192)
+parity_1     |
+parity_1     |     --tx-queue-gas=[LIMIT]
+parity_1     |         Maximum amount of total gas for external transactions in the queue. LIMIT can be either an amount of gas or
+parity_1     |         'auto' or 'off'. 'auto' sets the limit to be 20x the current block gas limit. (default: off)
+parity_1     |
+parity_1     |     --tx-queue-strategy=[S]
+parity_1     |         Prioritization strategy used to order transactions in the queue. S may be: gas - Prioritize txs with low gas
+parity_1     |         limit; gas_price - Prioritize txs with high gas price; gas_factor - Prioritize txs using gas price and gas limit
+parity_1     |         ratio. (default: gas_price)
+parity_1     |
+parity_1     |     --tx-queue-ban-count=[C]
+parity_1     |         Number of times maximal time for execution (--tx-time-limit) can be exceeded before banning
+parity_1     |         sender/recipient/code. (default: 1)
+parity_1     |
+parity_1     |     --tx-queue-ban-time=[SEC]
+parity_1     |         Banning time (in seconds) for offenders of specified execution time limit. Also number of offending actions have
+parity_1     |         to reach the threshold within that time. (default: 180)
+parity_1     |
+parity_1     |     --stratum-interface=[IP]
+parity_1     |         Interface address for Stratum server. (default: local)
+parity_1     |
+parity_1     |     --stratum-port=[PORT]
+parity_1     |         Port for Stratum server to listen on. (default: 8008)
+parity_1     |
+parity_1     |     --min-gas-price=[STRING]
+parity_1     |         Minimum amount of Wei per GAS to be paid for a transaction to be accepted for mining. Overrides --usd-per-tx.
+parity_1     |
+parity_1     |     --gas-price-percentile=[PCT]
+parity_1     |         Set PCT percentile gas price value from last 100 blocks as default gas price when sending transactions.
+parity_1     |         (default: 50)
+parity_1     |
+parity_1     |     --author=[ADDRESS]
+parity_1     |         Specify the block author (aka "coinbase") address for sending block rewards from sealed blocks. NOTE: MINING
+parity_1     |         WILL NOT WORK WITHOUT THIS OPTION.
+parity_1     |
+parity_1     |     --engine-signer=[ADDRESS]
+parity_1     |         Specify the address which should be used to sign consensus messages and issue blocks. Relevant only to non-PoW
+parity_1     |         chains.
+parity_1     |
+parity_1     |     --tx-gas-limit=[GAS]
+parity_1     |         Apply a limit of GAS as the maximum amount of gas a single transaction may have for it to be mined.
+parity_1     |
+parity_1     |     --tx-time-limit=[MS]
+parity_1     |         Maximal time for processing single transaction. If enabled senders/recipients/code of transactions offending the
+parity_1     |         limit will be banned from being included in transaction queue for 180 seconds.
+parity_1     |
+parity_1     |     --extra-data=[STRING]
+parity_1     |         Specify a custom extra-data for authored blocks, no more than 32 characters.
+parity_1     |
+parity_1     |     --notify-work=[URLS]
+parity_1     |         URLs to which work package notifications are pushed. URLS should be a comma-delimited list of HTTP URLs.
+parity_1     |
+parity_1     |     --stratum-secret=[STRING]
+parity_1     |         Secret for authorizing Stratum server for peers.
+parity_1     |
+parity_1     | Internal Options:
+parity_1     |     --can-restart
+parity_1     |         Executable will auto-restart if exiting with 69
+parity_1     |
+parity_1     | Miscellaneous options:
+parity_1     |     --no-color
+parity_1     |         Don't use terminal color codes in output.
+parity_1     |
+parity_1     |     -v, --version
+parity_1     |         Show information about version.
+parity_1     |
+parity_1     |     --no-config
+parity_1     |         Don't load a configuration file.
+parity_1     |
+parity_1     |     --ntp-servers=[HOSTS]
+parity_1     |         Comma separated list of NTP servers to provide current time (host:port). Used to verify node health. Parity uses
+parity_1     |         pool.ntp.org NTP servers; consider joining the pool: http://www.pool.ntp.org/join.html (default:
+parity_1     |         0.parity.pool.ntp.org:123,1.parity.pool.ntp.org:123,2.parity.pool.ntp.org:123,3.parity.pool.ntp.org:123)
+parity_1     |
+parity_1     |     -l, --logging=[LOGGING]
+parity_1     |         Specify the logging level. Must conform to the same format as RUST_LOG.
+parity_1     |
+parity_1     |     --log-file=[FILENAME]
+parity_1     |         Specify a filename into which logging should be appended.
+parity_1     |
+parity_1     | Footprint options:
+parity_1     |     --fast-and-loose
+parity_1     |         Disables DB WAL, which gives a significant speed up but means an unclean exit is unrecoverable.
+parity_1     |
+parity_1     |     --scale-verifiers
+parity_1     |         Automatically scale amount of verifier threads based on workload. Not guaranteed to be faster.
+parity_1     |
+parity_1     |     --tracing=[BOOL]
+parity_1     |         Indicates if full transaction tracing should be enabled. Works only if client had been fully synced with tracing
+parity_1     |         enabled. BOOL may be one of auto, on, off. auto uses last used value of this option (off if it does not exist).
+parity_1     |         (default: auto)
+parity_1     |
+parity_1     |     --pruning=[METHOD]
+parity_1     |         Configure pruning of the state/storage trie. METHOD may be one of auto, archive, fast: archive - keep all state
+parity_1     |         trie data. No pruning. fast - maintain journal overlay. Fast but 50MB used. auto - use the method most recently
+parity_1     |         synced or default to fast if none synced. (default: auto)
+parity_1     |
+parity_1     |     --pruning-history=[NUM]
+parity_1     |         Set a minimum number of recent states to keep when pruning is active. (default: 64)
+parity_1     |
+parity_1     |     --pruning-memory=[MB]
+parity_1     |         The ideal amount of memory in megabytes to use to store recent states. As many states as possible will be kept
+parity_1     |         within this limit, and at least --pruning-history states will always be kept. (default: 32)
+parity_1     |
+parity_1     |     --cache-size-db=[MB]
+parity_1     |         Override database cache size. (default: 128)
+parity_1     |
+parity_1     |     --cache-size-blocks=[MB]
+parity_1     |         Specify the prefered size of the blockchain cache in megabytes. (default: 8)
+parity_1     |
+parity_1     |     --cache-size-queue=[MB]
+parity_1     |         Specify the maximum size of memory to use for block queue. (default: 40)
+parity_1     |
+parity_1     |     --cache-size-state=[MB]
+parity_1     |         Specify the maximum size of memory to use for the state cache. (default: 25)
+parity_1     |
+parity_1     |     --db-compaction=[TYPE]
+parity_1     |         Database compaction type. TYPE may be one of: ssd - suitable for SSDs and fast HDDs; hdd - suitable for slow
+parity_1     |         HDDs; auto - determine automatically. (default: auto)
+parity_1     |
+parity_1     |     --fat-db=[BOOL]
+parity_1     |         Build appropriate information to allow enumeration of all accounts and storage keys. Doubles the size of the
+parity_1     |         state database. BOOL may be one of on, off or auto. (default: auto)
+parity_1     |
+parity_1     |     --cache-size=[MB]
+parity_1     |         Set total amount of discretionary memory to use for the entire system, overrides other cache and queue options.
+parity_1     |
+parity_1     |     --num-verifiers=[INT]
+parity_1     |         Amount of verifier threads to use or to begin with, if verifier auto-scaling is enabled.
+parity_1     |
+parity_1     | Import/export options:
+parity_1     |     --no-seal-check
+parity_1     |         Skip block seal check.
+parity_1     |
+parity_1     | Snapshot options:
+parity_1     |     --no-periodic-snapshot
+parity_1     |         Disable automated snapshots which usually occur once every 10000 blocks.
+parity_1     |
+parity_1     | Virtual Machine options:
+parity_1     |     --jitvm
+parity_1     |         Enable the JIT VM.
+parity_1     |
+parity_1     | Whisper options:
+parity_1     |     --whisper
+parity_1     |         Enable the Whisper network.
+parity_1     |
+parity_1     |     --whisper-pool-size=[MB]
+parity_1     |         Target size of the whisper message pool in megabytes. (default: 10)
+parity_1     |
+parity_1     | Legacy options:
+parity_1     |     --warp
+parity_1     |         Does nothing; warp sync is enabled by default.
+parity_1     |
+parity_1     |     --dapps-apis-all
+parity_1     |         Dapps server is merged with RPC server. Use --jsonrpc-apis.
+parity_1     |
+parity_1     |     --geth
+parity_1     |         Run in Geth-compatibility mode. Sets the IPC path to be the same as Geth's. Overrides the --ipc-path and
+parity_1     |         --ipcpath options. Alters RPCs to reflect Geth bugs. Includes the personal_ RPC by default.
+parity_1     |
+parity_1     |     --testnet
+parity_1     |         Testnet mode. Equivalent to --chain testnet. Overrides the --keys-path option.
+parity_1     |
+parity_1     |     --import-geth-keys
+parity_1     |         Attempt to import keys from Geth client.
+parity_1     |
+parity_1     |     --ipcdisable
+parity_1     |         Equivalent to --no-ipc.
+parity_1     |
+parity_1     |     --ipc-off
+parity_1     |         Equivalent to --no-ipc.
+parity_1     |
+parity_1     |     --nodiscover
+parity_1     |         Equivalent to --no-discovery.
+parity_1     |
+parity_1     |     -j, --jsonrpc
+parity_1     |         Does nothing; JSON-RPC is on by default now.
+parity_1     |
+parity_1     |     --jsonrpc-off
+parity_1     |         Equivalent to --no-jsonrpc.
+parity_1     |
+parity_1     |     -w, --webapp
+parity_1     |         Does nothing; dapps server is on by default now.
+parity_1     |
+parity_1     |     --dapps-off
+parity_1     |         Equivalent to --no-dapps.
+parity_1     |
+parity_1     |     --rpc
+parity_1     |         Does nothing; JSON-RPC is on by default now.
+parity_1     |
+parity_1     |     --dapps-port=[PORT]
+parity_1     |         Dapps server is merged with RPC server. Use --jsonrpc-port.
+parity_1     |
+parity_1     |     --dapps-interface=[IP]
+parity_1     |         Dapps server is merged with RPC server. Use --jsonrpc-interface.
+parity_1     |
+parity_1     |     --dapps-hosts=[HOSTS]
+parity_1     |         Dapps server is merged with RPC server. Use --jsonrpc-hosts.
+parity_1     |
+parity_1     |     --dapps-cors=[URL]
+parity_1     |         Dapps server is merged with RPC server. Use --jsonrpc-cors.
+parity_1     |
+parity_1     |     --dapps-user=[USERNAME]
+parity_1     |         Dapps server authentication has been removed.
+parity_1     |
+parity_1     |     --dapps-pass=[PASSWORD]
+parity_1     |         Dapps server authentication has been removed.
+parity_1     |
+parity_1     |     --datadir=[PATH]
+parity_1     |         Equivalent to --base-path PATH.
+parity_1     |
+parity_1     |     --networkid=[INDEX]
+parity_1     |         Equivalent to --network-id INDEX.
+parity_1     |
+parity_1     |     --peers=[NUM]
+parity_1     |         Equivalent to --min-peers NUM.
+parity_1     |
+parity_1     |     --nodekey=[KEY]
+parity_1     |         Equivalent to --node-key KEY.
+parity_1     |
+parity_1     |     --rpcaddr=[IP]
+parity_1     |         Equivalent to --jsonrpc-interface IP.
+parity_1     |
+parity_1     |     --rpcport=[PORT]
+parity_1     |         Equivalent to --jsonrpc-port PORT.
+parity_1     |
+parity_1     |     --rpcapi=[APIS]
+parity_1     |         Equivalent to --jsonrpc-apis APIS.
+parity_1     |
+parity_1     |     --rpccorsdomain=[URL]
+parity_1     |         Equivalent to --jsonrpc-cors URL.
+parity_1     |
+parity_1     |     --ipcapi=[APIS]
+parity_1     |         Equivalent to --ipc-apis APIS.
+parity_1     |
+parity_1     |     --ipcpath=[PATH]
+parity_1     |         Equivalent to --ipc-path PATH.
+parity_1     |
+parity_1     |     --gasprice=[WEI]
+parity_1     |         Equivalent to --min-gas-price WEI.
+parity_1     |
+parity_1     |     --etherbase=[ADDRESS]
+parity_1     |         Equivalent to --author ADDRESS.
+parity_1     |
+parity_1     |     --extradata=[STRING]
+parity_1     |         Equivalent to --extra-data STRING.
+parity_1     |
+parity_1     |     --cache=[MB]
+parity_1     |         Equivalent to --cache-size MB.
+parity_1     |
+parity_1     |
