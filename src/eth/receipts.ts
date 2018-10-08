@@ -1,4 +1,4 @@
-import { Context, TransactionModel } from './types';
+import { Context, TransactionModel } from '../types';
 import * as r from 'rethinkdb';
 
 export async function run(ctx: Context) {

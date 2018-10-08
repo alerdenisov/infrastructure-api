@@ -1,5 +1,5 @@
 import * as r from 'rethinkdb';
-import { Context, TransactionModel, BlockModel } from './types';
+import { Context, TransactionModel, BlockModel } from '../types';
 
 export async function run(ctx: Context) {
   const latestInDb = await r

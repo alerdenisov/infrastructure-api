@@ -1,5 +1,5 @@
 import { rpcCall } from './raw-rpc';
-import { Context } from './types';
+import { Context } from '../types';
 
 function toTraceTree(traces: any[]) {
   const tree = {} as any;

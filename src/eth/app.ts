@@ -4,7 +4,7 @@ import { run as loadBlocks } from './blocks';
 import { run as loadPending } from './pending';
 import { run as loadTraces } from './traces';
 import { run as loadReceipts } from './receipts';
-import { TransactionModel, BlockModel, Context, TraceModel } from './types';
+import { TransactionModel, BlockModel, Context, TraceModel } from '../types';
 import {
   getOrCreateDatabase,
   checkOrCreateSimpleIndex,

@@ -1,5 +1,5 @@
 import { rpcCall } from './raw-rpc';
-import { Context, TransactionModel } from './types';
+import { Context, TransactionModel } from '../types';
 import { InsertResult } from 'rethinkdb';
 
 export async function run(ctx: Context) {
