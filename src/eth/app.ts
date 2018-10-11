@@ -67,8 +67,12 @@ async function setup(): Promise<Context> {
 
   await checkOrCreateSimpleIndex(connection, trx, 'blockHash');
   await checkOrCreateSimpleIndex(connection, trx, 'blockHeight');
-  await checkOrCreateSimpleIndex(connection, trx, 'sender');
-  await checkOrCreateSimpleIndex(connection, trx, 'recipient');
+  await checkOrCreateSimpleIndex(connection, trx, 'from', {
+    multi: true,
+  });
+  await checkOrCreateSimpleIndex(connection, trx, 'to', {
+    multi: true,
+  });
   await checkOrCreateSimpleIndex(connection, trx, 'timestamp');
 
   await checkOrCreateSimpleIndex(connection, blocks, 'parentHash');

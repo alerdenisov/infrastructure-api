@@ -57,7 +57,7 @@ export async function run(ctx: Context) {
       const traces = trace.action_traces.map((t, index) =>
         flatRecursive([index], t),
       );
-      console.log(JSON.stringify(traces, null, 2));
+      // console.log(JSON.stringify(traces, null, 2));
 
       //   const tx = await TransactionModel.findOne({ trx_id: hash }).exec();
       //   const block = await BlockModel.findOne({

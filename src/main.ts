@@ -6,7 +6,7 @@ import config from 'config';
 
 async function server() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix(`/api/v${config.version}`);
+  app.setGlobalPrefix(`/api`);
   await app.listen(config.port, config.host);
 }
 
