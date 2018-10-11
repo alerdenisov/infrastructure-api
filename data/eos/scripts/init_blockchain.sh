@@ -72,14 +72,15 @@ deploy_contract.sh masteroracle masteroracle blogwallet $(cat blog_wallet_passwo
 deploy_contract.sh priceoraclize priceoracliz blogwallet $(cat blog_wallet_password.txt)
 
 echo "=== setup oraclize ==="
-sleep 1s
-cleos get account masteroracle -j
-cleos get account priceoracliz -j
-cleos set account permission masteroracle active '{"threshold":1,"keys": [{"key":"EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9","weight":1}],"accounts": [{"permission": {"actor":"masteroracle","permission":"eosio.code"},"weight":1}],"waits":[]}' -p masteroracle@active
-cleos set account permission prizeoracliz active '{"threshold":1,"keys": [{"key":"EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9","weight":1}],"accounts": [{"permission": {"actor":"priceoracliz","permission":"eosio.code"},"weight":1}],"waits":[]}' -p prizeoracliz@active
+echo "=== updateauth of masteroracle ==="
+cleos push action eosio updateauth '{"account":"masteroracle","permission":"active","parent":"owner","auth":{"threshold":1,"keys": [{"key":"EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9","weight":1}],"accounts": [{"permission": {"actor":"masteroracle","permission":"eosio.code"},"weight":1}],"waits":[]}}' -p masteroracle@active
+echo "=== updateauth of priceoracliz ==="
+cleos push action eosio updateauth '{"account":"priceoracliz","permission":"active","parent":"owner","auth":{"threshold":1,"keys": [{"key":"EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9","weight":1}],"accounts": [{"permission": {"actor":"priceoracliz","permission":"eosio.code"},"weight":1}],"waits":[]}}' -p priceoracliz@active
 # cleos push action blogaccount createpost "[ $timestamp, "\""bobross"\"", "\""$title"\"", "\""$content"\"", "\""$tag"\""]" -p bobross@active
+echo "=== setup of priceoracliz ==="
 cleos push action priceoracliz setup '["masteroracle"]' -p priceoracliz@active --json
-cleos push action masteroracle addoracle '["ducororacle1"]' -p priceoracliz@active --json
+echo "=== addoracle to masteroracle ==="
+cleos push action masteroracle addoracle '["ducororacle1"]' -p masteroracle@active --json
 # echo "=== create user accounts ==="
 # script for creating data into blockchain
 # create_accounts.sh

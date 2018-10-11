@@ -186,17 +186,17 @@ public:
              string(),
              pack(request_args{bytes{}, bytes{}}));
 
-    ask_data(_self, master, "0x00", 3600u,
-             string(),
-             pack(request_args{
-                 // data schema
-                 bytes{0, 0},
-                 // binary data
-                 pack(
-                     std::make_tuple(0, 0))}));
-    ask_data(_self, master, "0x00", 3600u,
-             string(),
-             pack(request_args{bytes{}, bytes{}}));
+    // ask_data(_self, master, "0x00", 3600u,
+    //          string(),
+    //          pack(request_args{
+    //              // data schema
+    //              bytes{0, 0},
+    //              // binary data
+    //              pack(
+    //                  std::make_tuple(0, 0))}));
+    // ask_data(_self, master, "0x00", 3600u,
+    //          string(),
+    //          pack(request_args{bytes{}, bytes{}}));
   }
 
   void
