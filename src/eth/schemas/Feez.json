@@ -1,0 +1,30 @@
+{
+  "abi": [
+    {
+      "constant": false,
+      "inputs": [
+        {
+          "name": "ticker",
+          "type": "uint256"
+        }
+      ],
+      "name": "fee",
+      "outputs": [],
+      "payable": false,
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "name": "ticker",
+          "type": "uint256"
+        }
+      ],
+      "name": "FeezEvent",
+      "type": "event"
+    }
+  ]
+}

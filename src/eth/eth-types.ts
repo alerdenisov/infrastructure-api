@@ -22,6 +22,8 @@ export interface IEthLog extends IMeta {
   txIndex: number;
   txLogIndex: HexNumber;
   type: string;
+  parsedVersion: number;
+  parsed: any;
 }
 
 export interface IEthBlock extends IBlock {

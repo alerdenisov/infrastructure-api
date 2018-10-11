@@ -1,10 +1,11 @@
 import Web3 = require('web3');
 import * as r from 'rethinkdb';
-import { run as loadBlocks } from './blocks';
-import { run as loadTransactions } from './transactions';
-import { run as loadPending } from './pending';
-import { run as loadTraces } from './traces';
-import { run as loadReceipts } from './receipts';
+import { run as blocksRun } from './blocks';
+import { run as transactionsRun } from './transactions';
+import { run as pendingRun } from './pending';
+import { run as tracesRun } from './traces';
+import { run as receiptsRun } from './receipts';
+import { run as parseRun } from './parse';
 import {
   getOrCreateDatabase,
   checkOrCreateSimpleIndex,
@@ -15,11 +16,12 @@ import { WebsocketProvider } from 'web3/providers';
 import { IEthTransaction, IEthBlock, IEthTrace, IEthLog } from './eth-types';
 
 const tasks = {
-  loadBlocks,
-  loadTransactions,
-  loadPending,
-  loadTraces,
-  loadReceipts,
+  blocksRun,
+  transactionsRun,
+  pendingRun,
+  tracesRun,
+  receiptsRun,
+  parseRun,
 };
 
 export interface Context {

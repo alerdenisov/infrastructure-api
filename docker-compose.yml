@@ -1,0 +1,79 @@
+version: '3'
+services:
+  mongodb:
+    image: 'mongo:4.0'
+    hostname: mongodb
+    expose:
+      - 27017
+    ports:
+      - '27017:27017'
+    volumes:
+      - './data/eos/mongo:/data/db'
+
+  rethinkdb:
+    image: 'rethinkdb'
+    hostname: 'rethinkdb'
+    expose:
+      - 28015
+      - 8080
+    ports:
+      - '28015:28015'
+      - '8080:8080'
+    volumes:
+      - './data/rethinkdb:/data'
+
+  parity:
+    image: 'parity/parity:stable'
+    hostname: parity
+    ports:
+      - '8545:8545'
+      - '8546:8546'
+    expose:
+      - 8545
+      - 8546
+    command: [
+        '--base-path=/mnt/parity',
+        '--chain=/mnt/parity/genesis.json',
+        # '--ui-port=8180',
+        '-j',
+        '--jsonrpc-port=8545',
+        '--jsonrpc-interface=0.0.0.0',
+        '--jsonrpc-hosts=all',
+        '--jsonrpc-cors=all',
+        '--unlock=0xDf08F82De32B8d460adbE8D72043E3a7e25A3B39,0x6704Fbfcd5Ef766B287262fA2281C105d57246a6,0x9E1Ef1eC212F5DFfB41d35d9E5c14054F26c6560,0xce42bdB34189a93c55De250E011c68FaeE374Dd3',
+        '--no-ui',
+        '--unsafe-expose',
+        '--engine-signer=0xDf08F82De32B8d460adbE8D72043E3a7e25A3B39',
+        '--password=/mnt/parity/pwd',
+        '--min-gas-price=10000000000',
+        '--tracing=on',
+        '--force-sealing',
+      ]
+    volumes:
+      - './data/parity:/mnt/parity'
+  eos:
+    image: 'eosio/eos-dev:v1.3.1'
+    hostname: eos
+    volumes:
+      - './data/eos/contracts:/opt/eosio/bin/contracts'
+      - './data/eos/scripts:/opt/eosio/bin/scripts'
+      - './data/eos/mnt:/mnt/dev/data'
+    working_dir: /opt/eosio/bin
+    links:
+      - mongodb
+    depends_on:
+      - mongodb
+    expose:
+      - 8888
+      - 9876
+    ports:
+      - '8888:8888'
+      - '9876:9876'
+    command: ['/bin/bash', '-c', './scripts/run.sh']
+    # command: [
+    #   'cleos',
+    #   'get',
+    #   'account',
+    #   'eosio',
+    #   '-j'
+    # ]
