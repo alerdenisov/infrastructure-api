@@ -7,6 +7,7 @@ import { waitFor } from 'utils';
 export class BlockchainService {
   connection: r.Connection;
   ready: boolean = false;
+
   constructor() {
     this.initialize();
   }
@@ -21,10 +22,15 @@ export class BlockchainService {
     this.ready = true;
   }
 
-  async getChain(chain: string) {
-    console.log(this.ready);
+  async chains() {
+    return ['eth', 'eos'];
+  }
+
+  async getState(chain: string) {
+    if ((await this.chains()).indexOf(chain) === -1) {
+      throw new Error('Unkown chain');
+    }
     await waitFor(() => this.ready);
-    console.log('ready to call');
 
     const latest = await r
       .branch(
@@ -43,6 +49,41 @@ export class BlockchainService {
 
     console.log(latest);
 
-    return latest.toString();
+    return {
+      height: latest,
+    };
+  }
+
+  async getTraces(chain: string, address: string) {
+    if ((await this.chains()).indexOf(chain) === -1) {
+      throw new Error('Unkown chain');
+    }
+    await waitFor(() => this.ready);
+
+    console.log(chain, address);
+
+    return (r
+      .db(chain)
+      .table('traces')
+      .getAll(address, { index: 'from' })
+      .union(
+        r
+          .db(chain)
+          .table('traces')
+          .getAll(address, { index: 'to' }),
+      )
+      .orderBy('timestamp')('txHash') as any)
+      .distinct()
+      .eqJoin(doc => doc, r.db(chain).table('transactions'))('right')
+      .merge(doc => ({
+        traces: r
+          .db(chain)
+          .table('traces')
+          .getAll(doc('txHash').coerceTo('string'), { index: 'txHash' })
+          .coerceTo('array'),
+      }))
+      .limit(100)
+      .run(this.connection)
+      .then(cursor => cursor.toArray());
   }
 }

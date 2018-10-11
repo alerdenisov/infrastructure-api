@@ -5,10 +5,30 @@ import { BlockchainService } from './blockchain.service';
 export class BlockchainController {
   constructor(private readonly blockchain: BlockchainService) {}
 
+  @Get('blockchains')
+  async root() {
+    return {
+      supported: await this.blockchain.chains(),
+    };
+  }
+
   @Get(':blockchain')
-  async root(@Param('blockchain') blockchain: string) {
-    const db = await this.blockchain.getChain(blockchain);
+  async state(@Param('blockchain') blockchain: string) {
+    const db = await this.blockchain.getState(blockchain);
     return db;
-    // return this.blockchain.root();
+  }
+
+  @Get(':blockchain/address/:address/txs')
+  async transactions(
+    @Param('blockchain') blockchain: string,
+    @Param('address') involved: string,
+  ) {
+    const txs = await this.blockchain.getTraces(blockchain, involved);
+    console.log(txs);
+    return {
+      address: involved,
+      blockchain,
+      txs,
+    };
   }
 }

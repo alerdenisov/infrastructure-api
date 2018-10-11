@@ -81,6 +81,12 @@ async function setup(): Promise<Context> {
   await checkOrCreateSimpleIndex(connection, blocks, 'hash');
 
   await checkOrCreateSimpleIndex(connection, traces, 'txHash');
+  await checkOrCreateSimpleIndex(connection, traces, 'from', {
+    multi: true,
+  });
+  await checkOrCreateSimpleIndex(connection, traces, 'to', {
+    multi: true,
+  });
 
   await checkOrCreateSimpleIndex(connection, logs, 'address');
   await checkOrCreateSimpleIndex(connection, logs, 'txHash');
