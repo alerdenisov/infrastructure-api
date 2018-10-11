@@ -49,3 +49,7 @@ export const checkOrCreateSimpleIndex = async <T>(
 
   return indexKey;
 };
+
+export const unique = <T>(input: Array<T>): Array<T> => {
+  return Array.from(new Set(input));
+};

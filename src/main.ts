@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from 'app.module';
 import { run as eth } from 'eth/app';
+import { run as eos } from 'eos/app';
 import config from 'config';
 
 async function server() {
@@ -11,6 +12,7 @@ async function server() {
 
 const apps = {
   eth,
+  eos,
   server,
 };
 

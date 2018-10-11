@@ -1,5 +1,7 @@
 import * as r from 'rethinkdb';
-import { Context, TransactionModel, BlockModel } from './types';
+import { IBlock } from '../types';
+import { Context } from './app';
+import { IEthBlock, IEthTransaction } from './eth-types';
 
 export async function run(ctx: Context) {
   const latestInDb = await r
@@ -7,7 +9,7 @@ export async function run(ctx: Context) {
       ctx.tables.blocks.isEmpty(),
       0,
       ctx.tables.blocks
-        .max({ index: 'number' })('number')
+        .max({ index: 'height' })('height')
         .coerceTo('number'),
     )
     .run(ctx.connection);
@@ -34,16 +36,40 @@ async function syncBlocks(ctx: Context, since: number, to: number) {
     );
 
     // TODO: DUXI IT
-    const nonTrxBlocks = blocks.map<BlockModel>(block => ({
+    // export interface BlockHeader {
+    // 	number: number;
+    // 	hash: string;
+    // 	parentHash: string;
+    // 	nonce: string;
+    // 	sha3Uncles: string;
+    // 	logsBloom: string;
+    // 	transactionRoot: string;
+    // 	stateRoot: string;
+    // 	receiptRoot: string;
+    // 	miner: string;
+    // 	extraData: string;
+    // 	gasLimit: number;
+    // 	gasUsed: number;
+    // 	timestamp: number;
+    // }
+    // export interface Block extends BlockHeader {
+    // 	transactions: Transaction[];
+    // 	size: number;
+    // 	difficulty: number;
+    // 	totalDifficulty: number;
+    // 	uncles: string[];
+    // }
+    const nonTrxBlocks = blocks.map<IEthBlock>(block => ({
+      version: 1,
+
       author: block.miner.toLowerCase(),
       difficulty: block.difficulty.toString(),
-      extraData: block.extraData,
       gasLimit: block.gasLimit,
       gasUsed: block.gasUsed,
       hash: block.hash,
-      parentHash: block.parentHash,
+      height: block.number,
       logsBloom: block.logsBloom,
-      number: block.number,
+      parentHash: block.parentHash,
       receiptsRoot: <any>block['receiptsRoot'],
       sha3Uncles: block.sha3Uncles,
       signature: <any>block['signature'],
@@ -56,17 +82,24 @@ async function syncBlocks(ctx: Context, since: number, to: number) {
       uncles: block.uncles,
     }));
 
-    await ctx.tables.blocks
-      .insert(<any>nonTrxBlocks, {
-        conflict: 'error',
-      })
-      .run(ctx.connection);
-
     const transactions = blocks
       .map(block => block.transactions)
       .reduce((flat, map) => flat.concat(map), [])
-      .map<TransactionModel>(trx => ({
-        ...trx,
+      .map<IEthTransaction>(trx => ({
+        version: 1,
+
+        blockHash: trx.blockHash,
+        blockHeight: trx.blockNumber,
+        gas: trx.gas,
+        gasPrice: trx.gasPrice,
+        txHash: trx.hash,
+        txIndex: trx.transactionIndex,
+        input: trx.input,
+        nonce: trx.nonce,
+        to: [trx.to],
+        from: [trx.from],
+        signature: trx.s + trx.r + trx.v,
+        timestamp: 0,
       }));
 
     if (transactions.length) {
@@ -75,5 +108,11 @@ async function syncBlocks(ctx: Context, since: number, to: number) {
         .insert(<any>transactions, { conflict: 'update' })
         .run(ctx.connection);
     }
+
+    await ctx.tables.blocks
+      .insert(<any>nonTrxBlocks, {
+        conflict: 'error',
+      })
+      .run(ctx.connection);
   }
 }

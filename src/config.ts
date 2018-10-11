@@ -25,6 +25,5 @@ export default {
   rethinkdb: {
     host: process.env.RETHINKDB_HOST,
     port: parseInt(process.env.RETHINKDB_PORT),
-    database: process.env.RETHINKDB_DATABASE,
   },
 };

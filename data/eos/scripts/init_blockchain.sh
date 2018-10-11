@@ -54,6 +54,9 @@ cleos wallet import -n blogwallet --private-key 5JD9AGTuTeD5BXZwGQ5AtwBqHK21aHmY
 
 # create account for blogaccount with above wallet's public keys
 cleos create account eosio blogaccount EOS6PUh9rs7eddJNzqgqDx1QrspSHLRxLMcRdwHZZRL4tpbtvia5B EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9
+cleos create account eosio masteroracle EOS6PUh9rs7eddJNzqgqDx1QrspSHLRxLMcRdwHZZRL4tpbtvia5B EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9
+cleos create account eosio priceoracliz EOS6PUh9rs7eddJNzqgqDx1QrspSHLRxLMcRdwHZZRL4tpbtvia5B EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9
+cleos create account eosio ducororacle1 EOS6PUh9rs7eddJNzqgqDx1QrspSHLRxLMcRdwHZZRL4tpbtvia5B EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9
 
 # * Replace "blogaccount" with your own account name when you start your own project
 
@@ -62,15 +65,29 @@ echo "=== deploy smart contract ==="
 # $2 account holder name of the smart contract
 # $3 wallet that holds the keys for the account
 # $4 password for unlocking the wallet
+echo "=== blog ==="
 deploy_contract.sh blog blogaccount blogwallet $(cat blog_wallet_password.txt)
+echo "=== oracles ==="
+deploy_contract.sh masteroracle masteroracle blogwallet $(cat blog_wallet_password.txt)
+deploy_contract.sh priceoraclize priceoracliz blogwallet $(cat blog_wallet_password.txt)
 
-echo "=== create user accounts ==="
+echo "=== setup oraclize ==="
+echo "=== updateauth of masteroracle ==="
+cleos push action eosio updateauth '{"account":"masteroracle","permission":"active","parent":"owner","auth":{"threshold":1,"keys": [{"key":"EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9","weight":1}],"accounts": [{"permission": {"actor":"masteroracle","permission":"eosio.code"},"weight":1}],"waits":[]}}' -p masteroracle@active
+echo "=== updateauth of priceoracliz ==="
+cleos push action eosio updateauth '{"account":"priceoracliz","permission":"active","parent":"owner","auth":{"threshold":1,"keys": [{"key":"EOS8BCgapgYA2L4LJfCzekzeSr3rzgSTUXRXwNi8bNRoz31D14en9","weight":1}],"accounts": [{"permission": {"actor":"priceoracliz","permission":"eosio.code"},"weight":1}],"waits":[]}}' -p priceoracliz@active
+# cleos push action blogaccount createpost "[ $timestamp, "\""bobross"\"", "\""$title"\"", "\""$content"\"", "\""$tag"\""]" -p bobross@active
+echo "=== setup of priceoracliz ==="
+cleos push action priceoracliz setup '["masteroracle"]' -p priceoracliz@active --json
+echo "=== addoracle to masteroracle ==="
+cleos push action masteroracle addoracle '["ducororacle1"]' -p masteroracle@active --json
+# echo "=== create user accounts ==="
 # script for creating data into blockchain
-create_accounts.sh
+# create_accounts.sh
 
-echo "=== create mock data for contract ==="
+# echo "=== create mock data for contract ==="
 # script for calling actions on the smart contract to create mock data
-create_mock_data.sh
+# create_mock_data.sh
 
 # * Replace the script with different form of data that you would pushed into the blockchain when you start your own project
 

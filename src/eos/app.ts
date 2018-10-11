@@ -1,51 +1,37 @@
-import Web3 = require('web3');
+import * as mongoose from 'mongoose';
 import * as r from 'rethinkdb';
-import { run as loadBlocks } from './blocks';
-import { run as loadTransactions } from './transactions';
-import { run as loadPending } from './pending';
-import { run as loadTraces } from './traces';
-import { run as loadReceipts } from './receipts';
 import {
   getOrCreateDatabase,
   checkOrCreateSimpleIndex,
   getOrCreateTable,
 } from 'utils';
 import config from '../config';
-import { WebsocketProvider } from 'web3/providers';
-import { IEthTransaction, IEthBlock, IEthTrace, IEthLog } from './eth-types';
-
-const tasks = {
-  loadBlocks,
-  loadTransactions,
-  loadPending,
-  loadTraces,
-  loadReceipts,
-};
+import { IEosTrace, IEosTransaction, IEosBlock } from './types';
+import { run as blocksRun } from './blocks';
+import { run as transactionsRun } from './transactions';
+import { run as tracesRun } from './traces';
 
 export interface Context {
   connection: r.Connection;
   tables: {
-    trx: r.RTable<IEthTransaction>;
-    blocks: r.RTable<IEthBlock>;
-    traces: r.RTable<IEthTrace>;
-    logs: r.RTable<IEthLog>;
+    trx: r.RTable<IEosTransaction>;
+    blocks: r.RTable<IEosBlock>;
+    traces: r.RTable<IEosTrace>;
   };
   db: r.RDb;
-  web3: Web3;
 }
 
 async function setup(): Promise<Context> {
-  const provider = new Web3.providers.WebsocketProvider('ws://localhost:8546');
-  const web3 = new Web3(provider);
+  await mongoose.connect(`mongodb://localhost:27017/EOS`);
   const connection = await r.connect({
     host: config.rethinkdb.host,
     port: config.rethinkdb.port,
   });
-  const db = await getOrCreateDatabase('eth', connection);
-  const blocks = await getOrCreateTable<IEthBlock>(connection, db, 'blocks', {
+  const db = await getOrCreateDatabase('eos', connection);
+  const blocks = await getOrCreateTable<IEosBlock>(connection, db, 'blocks', {
     primaryKey: 'height',
   });
-  const trx = await getOrCreateTable<IEthTransaction>(
+  const trx = await getOrCreateTable<IEosTransaction>(
     connection,
     db,
     'transactions',
@@ -54,16 +40,12 @@ async function setup(): Promise<Context> {
     },
   );
 
-  const traces = await getOrCreateTable<IEthTrace>(
+  const traces = await getOrCreateTable<IEosTrace>(
     connection,
     db,
     'traces',
     {},
   );
-
-  const logs = await getOrCreateTable<IEthLog>(connection, db, 'logs', {
-    primaryKey: 'id',
-  });
 
   await checkOrCreateSimpleIndex(connection, trx, 'blockHash');
   await checkOrCreateSimpleIndex(connection, trx, 'blockHeight');
@@ -78,22 +60,23 @@ async function setup(): Promise<Context> {
 
   await checkOrCreateSimpleIndex(connection, traces, 'txHash');
 
-  await checkOrCreateSimpleIndex(connection, logs, 'address');
-  await checkOrCreateSimpleIndex(connection, logs, 'txHash');
-  await checkOrCreateSimpleIndex(connection, logs, 'blockHash');
-
   return {
     connection,
     tables: {
       blocks,
       trx,
       traces,
-      logs,
     },
     db,
-    web3,
   };
 }
+
+const tasks = {
+  blocksRun,
+  transactionsRun,
+  tracesRun,
+};
+
 export async function run() {
   // TODO: setup provider from providen configuration
   let ctx = await setup();
@@ -105,12 +88,7 @@ export async function run() {
     } catch (e) {
       console.log(e);
       await ctx.connection.close();
-      await (<any>(
-        (ctx.web3.currentProvider as WebsocketProvider).connection
-      )).close();
-
       ctx = await setup();
     }
-  }
-  // console.log(await web3.eth.getBlock(1));
+  } // console.log(await web3.eth.getBlock(1));
 }
