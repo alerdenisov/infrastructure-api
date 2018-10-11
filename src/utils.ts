@@ -53,3 +53,9 @@ export const checkOrCreateSimpleIndex = async <T>(
 export const unique = <T>(input: Array<T>): Array<T> => {
   return Array.from(new Set(input));
 };
+
+export const waitFor = async (predicate: () => boolean): Promise<void> => {
+  while (!predicate()) {
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+};

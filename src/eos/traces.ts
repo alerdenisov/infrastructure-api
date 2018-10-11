@@ -51,13 +51,17 @@ export async function run(ctx: Context) {
 
     cachedConnection = ctx.connection;
     stream.each(async (_, hash) => {
-      console.log(`New transaction ${hash}`);
+      console.log(`New transaction ${hash}, request traces`);
       const trace = await TransactionTraceModel.findOne({ id: hash }).exec();
       // const root = trace.action_traces;
-      const traces = trace.action_traces.map((t, index) =>
-        flatRecursive([index], t),
-      );
+      const traces = trace.action_traces
+        .map((t, index) => flatRecursive([index], t))
+        .reduce((flat, arr) => flat.concat(arr), []);
+
       console.log(JSON.stringify(traces, null, 2));
+      await ctx.tables.traces
+        .insert(<any>traces, { conflict: 'update' })
+        .run(ctx.connection);
 
       //   const tx = await TransactionModel.findOne({ trx_id: hash }).exec();
       //   const block = await BlockModel.findOne({

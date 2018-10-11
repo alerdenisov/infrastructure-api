@@ -11,4 +11,5 @@ rm -rf data/parity/jsonrpc.json
 rm -rf data/rethinkdb
 
 docker-compose rm -v -f
-docker-compose up
+docker-compose up -d 
+yarn start:dev
