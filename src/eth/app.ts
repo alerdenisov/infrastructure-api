@@ -37,8 +37,11 @@ export interface Context {
 }
 
 async function setup(): Promise<Context> {
-  const provider = new Web3.providers.WebsocketProvider('ws://localhost:8546');
+  const provider = new Web3.providers.WebsocketProvider(
+    process.env.ETH_WEBSOCKER_URI,
+  );
   const web3 = new Web3(provider);
+
   const connection = await r.connect({
     host: config.rethinkdb.host,
     port: config.rethinkdb.port,
@@ -67,6 +70,13 @@ async function setup(): Promise<Context> {
     primaryKey: 'id',
   });
 
+  await checkOrCreateSimpleIndex(
+    connection,
+    blocks,
+    'txCount',
+    r.row('transactions').count(),
+  );
+
   await checkOrCreateSimpleIndex(connection, trx, 'blockHash');
   await checkOrCreateSimpleIndex(connection, trx, 'blockHeight');
   await checkOrCreateSimpleIndex(connection, trx, 'from', {
@@ -83,16 +93,32 @@ async function setup(): Promise<Context> {
   await checkOrCreateSimpleIndex(connection, blocks, 'hash');
 
   await checkOrCreateSimpleIndex(connection, traces, 'txHash');
-  await checkOrCreateSimpleIndex(connection, traces, 'from', {
-    multi: true,
-  });
-  await checkOrCreateSimpleIndex(connection, traces, 'to', {
-    multi: true,
-  });
+  await checkOrCreateSimpleIndex(
+    connection,
+    traces,
+    'from',
+    r.row('from').downcase(),
+    { multi: true },
+  );
+
+  await checkOrCreateSimpleIndex(
+    connection,
+    traces,
+    'to',
+    r.row('to').downcase(),
+    { multi: true },
+  );
 
   await checkOrCreateSimpleIndex(connection, logs, 'address');
   await checkOrCreateSimpleIndex(connection, logs, 'txHash');
   await checkOrCreateSimpleIndex(connection, logs, 'blockHash');
+  await checkOrCreateSimpleIndex(
+    connection,
+    logs,
+    'involved',
+    r.row('involved').map(a => a.downcase()),
+    { multi: true },
+  );
 
   return {
     connection,
@@ -124,5 +150,4 @@ export async function run() {
       ctx = await setup();
     }
   }
-  // console.log(await web3.eth.getBlock(1));
 }
