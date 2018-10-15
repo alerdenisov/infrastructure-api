@@ -22,7 +22,7 @@ export interface Context {
 }
 
 async function setup(): Promise<Context> {
-  await mongoose.connect(`mongodb://localhost:27017/EOS`);
+  await mongoose.connect(process.env.EOS_MONGO_URI);
   const connection = await r.connect({
     host: config.rethinkdb.host,
     port: config.rethinkdb.port,
@@ -63,12 +63,23 @@ async function setup(): Promise<Context> {
   await checkOrCreateSimpleIndex(connection, blocks, 'hash');
 
   await checkOrCreateSimpleIndex(connection, traces, 'txHash');
-  await checkOrCreateSimpleIndex(connection, traces, 'from', {
-    multi: true,
-  });
-  await checkOrCreateSimpleIndex(connection, traces, 'to', {
-    multi: true,
-  });
+  await checkOrCreateSimpleIndex(
+    connection,
+    traces,
+    'from',
+    r.row('from').downcase(),
+    { multi: true },
+  );
+
+  await checkOrCreateSimpleIndex(
+    connection,
+    traces,
+    'to',
+    r.row('to').downcase(),
+    { multi: true },
+  );
+  // await checkOrCreateSimpleIndex(connection, traces)
+  // r.db("db").table("table").indexCreate('lowercity', r.row('city').downcase())
 
   return {
     connection,
@@ -100,5 +111,5 @@ export async function run() {
       await ctx.connection.close();
       ctx = await setup();
     }
-  } // console.log(await web3.eth.getBlock(1));
+  }
 }
