@@ -1,4 +1,38 @@
 import * as r from 'rethinkdb';
+import { IBlock, ITransaction, ITrace, ILog } from 'types';
+
+export async function defaultRethink<
+  TBlock extends IBlock,
+  TTransaction extends ITransaction,
+  TTrace extends ITrace,
+  TLog extends ILog
+>(connection: r.Connection, dbName: string) {
+  const db = await getOrCreateDatabase(dbName, connection);
+  const blocks = await getOrCreateTable<TBlock>(connection, db, 'blocks', {
+    primaryKey: 'height',
+  });
+  const trx = await getOrCreateTable<TTransaction>(
+    connection,
+    db,
+    'transactions',
+    {
+      primaryKey: 'txHash',
+    },
+  );
+
+  const traces = await getOrCreateTable<TTrace>(connection, db, 'traces', {});
+
+  const logs = await getOrCreateTable<TLog>(connection, db, 'logs', {
+    primaryKey: 'id',
+  });
+
+  await checkOrCreateSimpleIndex(
+    connection,
+    blocks,
+    'txCount',
+    r.row('transactions').count(),
+  );
+}
 
 export function important<T>(from: T | null | undefined, message?: string): T {
   if (from) {
@@ -6,6 +40,19 @@ export function important<T>(from: T | null | undefined, message?: string): T {
   } else {
     throw new Error(message || 'Undefined variable error');
   }
+}
+export function or<T>(
+  original: T | null | undefined,
+  def: T,
+  onDef?: () => void,
+): T {
+  if (!original) {
+    if (typeof onDef === 'function') {
+      onDef();
+    }
+    return def;
+  }
+  return original;
 }
 
 export const getOrCreateDatabase = async (
@@ -37,13 +84,26 @@ export const getOrCreateTable = async <T>(
 export const checkOrCreateSimpleIndex = async <T>(
   connection: r.Connection,
   table: r.RTable<T>,
-  indexName: keyof T,
-  indexFunc?: r.IndexCreateOptions,
+  indexName: keyof T | string,
+  indexFunc?: r.IndexCreateOptions | r.IndexFunction<T>,
+  indexOptions?: r.IndexCreateOptions,
 ): Promise<string> => {
   const indexKey = `${table.name}_${indexName}`;
   let indexes = await table.indexList().run(connection);
   if (indexes.indexOf(<any>indexName) == -1) {
-    await table.indexCreate(<string>indexName, indexFunc).run(connection);
+    if (typeof indexOptions !== 'undefined') {
+      await table
+        .indexCreate(
+          <string>indexName,
+          indexFunc as r.IndexFunction<T>,
+          indexOptions,
+        )
+        .run(connection);
+    } else {
+      await table
+        .indexCreate(<string>indexName, indexFunc as r.IndexCreateOptions)
+        .run(connection);
+    }
     await table.indexWait(<string>indexName).run(connection);
   }
 
