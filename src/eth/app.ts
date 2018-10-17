@@ -1,5 +1,6 @@
 import Web3 = require('web3');
 import * as r from 'rethinkdb';
+import chalk from 'chalk';
 import { run as blocksRun } from './blocks';
 import { run as transactionsRun } from './transactions';
 import { run as pendingRun } from './pending';
@@ -16,15 +17,16 @@ import { WebsocketProvider } from 'web3/providers';
 import { IEthTransaction, IEthBlock, IEthTrace, IEthLog } from './eth-types';
 
 const tasks = {
-  blocksRun,
-  transactionsRun,
-  pendingRun,
-  tracesRun,
-  receiptsRun,
-  parseRun,
+  blk: blocksRun,
+  trx: transactionsRun,
+  pen: pendingRun,
+  trc: tracesRun,
+  rec: receiptsRun,
+  par: parseRun,
 };
 
 export interface Context {
+  app: string;
   connection: r.Connection;
   tables: {
     trx: r.RTable<IEthTransaction>;
@@ -32,13 +34,21 @@ export interface Context {
     traces: r.RTable<IEthTrace>;
     logs: r.RTable<IEthLog>;
   };
+  logger: {
+    ver: (message?: any, ...optionalParams: any[]) => void;
+    log: (message?: any, ...optionalParams: any[]) => void;
+    err: (message?: any, ...optionalParams: any[]) => void;
+    war: (message?: any, ...optionalParams: any[]) => void;
+    success: (message?: any, ...optionalParams: any[]) => void;
+  };
   db: r.RDb;
   web3: Web3;
 }
 
-async function setup(): Promise<Context> {
+async function setup(...args: string[]): Promise<Context> {
+  const app = Array.isArray(args) && args.length ? args[0] : 'all';
   const provider = new Web3.providers.WebsocketProvider(
-    process.env.ETH_WEBSOCKER_URI,
+    process.env.ETH_WEBSOCKET_URI,
   );
   const web3 = new Web3(provider);
 
@@ -86,6 +96,15 @@ async function setup(): Promise<Context> {
     multi: true,
   });
   await checkOrCreateSimpleIndex(connection, trx, 'timestamp');
+  await checkOrCreateSimpleIndex(
+    connection,
+    trx,
+    'hasReceipts',
+    r
+      .row('receipts')
+      .default(0)
+      .coerceTo('number'),
+  );
 
   await checkOrCreateSimpleIndex(connection, blocks, 'parentHash');
   await checkOrCreateSimpleIndex(connection, blocks, 'timestamp');
@@ -119,8 +138,16 @@ async function setup(): Promise<Context> {
     r.row('involved').map(a => a.downcase()),
     { multi: true },
   );
+  await checkOrCreateSimpleIndex(
+    connection,
+    logs,
+    'involvedCount',
+    r.row('involved').count(),
+    { multi: true },
+  );
 
   return {
+    app,
     connection,
     tables: {
       blocks,
@@ -130,24 +157,87 @@ async function setup(): Promise<Context> {
     },
     db,
     web3,
+    logger: {
+      ver: (message?: any, ...optionalParams: any[]) => {
+        console.log(
+          chalk.gray(
+            `[ETH][${app.toUpperCase()}][VER]:`,
+            message,
+            ...optionalParams,
+          ),
+        );
+      },
+      log: (message?: any, ...optionalParams: any[]) => {
+        console.log(
+          chalk.white(
+            `[ETH][${app.toUpperCase()}][LOG]:`,
+            message,
+            ...optionalParams,
+          ),
+        );
+      },
+      err: (message?: any, ...optionalParams: any[]) => {
+        console.log(
+          chalk.red(
+            `[ETH][${app.toUpperCase()}][ERR]:`,
+            message,
+            ...optionalParams,
+          ),
+        );
+      },
+      war: (message?: any, ...optionalParams: any[]) => {
+        console.log(
+          chalk.yellow(
+            `[ETH][${app.toUpperCase()}][WAR]:`,
+            message,
+            ...optionalParams,
+          ),
+        );
+      },
+      success: (message?: any, ...optionalParams: any[]) => {
+        console.log(
+          chalk.bgGreen.whiteBright(
+            `[ETH][${app.toUpperCase()}][SUC]:`,
+            message,
+            ...optionalParams,
+          ),
+        );
+      },
+    },
   };
 }
-export async function run() {
+export async function run(...args: string[]) {
   // TODO: setup provider from providen configuration
-  let ctx = await setup();
+  let ctx: Context | null = await setup(...args);
 
-  while (true) {
-    try {
-      await Promise.all(Object.values(tasks).map(f => f(ctx)));
-      await new Promise(resolve => setTimeout(resolve, 200));
-    } catch (e) {
-      console.log(e);
-      await ctx.connection.close();
-      await (<any>(
-        (ctx.web3.currentProvider as WebsocketProvider).connection
-      )).close();
+  if (ctx.app !== 'setup') {
+    while (true) {
+      try {
+        if (!ctx) {
+          ctx = await setup(...args);
+        }
 
-      ctx = await setup();
+        if (ctx.app === 'all') {
+          await Promise.all(Object.values(tasks).map(f => f(ctx)));
+        } else if (ctx.app === 'setup') {
+          ctx.logger.success('Done!');
+        } else {
+          await tasks[ctx.app](ctx);
+        }
+      } catch (e) {
+        ctx.logger.err(e.message);
+        // ctx.logger.ver(JSON.stringify(e, null, 2));
+        console.log(e);
+        await ctx.connection.close();
+        await (<any>(
+          (ctx.web3.currentProvider as WebsocketProvider).connection
+        )).close();
+
+        ctx = null;
+      }
     }
+  } else {
+    ctx.connection.close();
+    (<any>(ctx.web3.currentProvider as WebsocketProvider).connection).close();
   }
 }
