@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export async function rpcCall(method: string, ...params: any[]): Promise<any> {
   const { data } = await axios.post(
-    'http://localhost:8545',
+    process.env.ETH_RPC,
     {
       method,
       params,

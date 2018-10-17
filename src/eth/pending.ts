@@ -11,7 +11,8 @@ export async function run(ctx: Context) {
   };
 
   if (transactions.length > 0) {
-    const result = await ctx.tables.trx
+    ctx.logger.log(`Pending trx ${transactions.length}`);
+    await ctx.tables.trx
       .insert(
         <any>transactions.map<IEthTransaction>(trx => ({
           version: 1,
@@ -32,10 +33,5 @@ export async function run(ctx: Context) {
         { conflict: 'error' },
       )
       .run(ctx.connection);
-
-    if (result.inserted > 0) {
-      console.log(transactions);
-      console.log(`New ${result.inserted} pending transactions`);
-    }
   }
 }

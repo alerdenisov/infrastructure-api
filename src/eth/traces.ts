@@ -1,13 +1,47 @@
+import * as r from 'rethinkdb';
 import { rpcCall } from './raw-rpc';
 import { Context } from './app';
-import { IEthTrace } from './eth-types';
+import { IEthTrace, IEthBlock } from './eth-types';
+
+const getInput = (r: any): string => {
+  switch (r.type) {
+    case 'call':
+      return r.action.input;
+    case 'create':
+      return r.action.init;
+    case 'suicide':
+      return '0x0';
+  }
+  throw new Error(`unknown trace type ${r.type}`);
+};
+const getTo = (r: any, tx?: any): string[] => {
+  switch (r.type) {
+    case 'call':
+      return [r.action.to];
+    case 'suicide':
+      return [r.action.refundAddress];
+    case 'create':
+      return ['0x0'];
+  }
+  throw new Error(`unknown trace type ${r.type}`);
+};
+const getFrom = (r: any): string[] => {
+  switch (r.type) {
+    case 'call':
+    case 'create':
+      return [r.action.from];
+    case 'suicide':
+      return [r.action.address];
+  }
+  throw new Error(`unknown trace type ${r.type}`);
+};
 
 export async function run(ctx: Context) {
   const untracedBlocks = await ctx.tables.trx
-    .filter(transaction => transaction.hasFields('blockHeight'))
-    .filter(transactions =>
+    .between(1, r.maxval, { index: 'blockHeight' })
+    .filter(tx =>
       ctx.tables.traces
-        .getAll(transactions<string>('txHash'), { index: 'txHash' })
+        .getAll(tx<string>('txHash'), { index: 'txHash' })
         .isEmpty(),
     )
     .map(tx => ctx.tables.blocks.get(tx('blockHeight')))
@@ -17,8 +51,6 @@ export async function run(ctx: Context) {
     .then(cursor => cursor.toArray());
 
   if (untracedBlocks.length > 0) {
-    console.log(`Untraces blocks ${untracedBlocks.length}`);
-
     const traces = await Promise.all(
       untracedBlocks.map(block =>
         rpcCall('trace_block', ctx.web3.utils.toHex(block.height)).then(r =>
@@ -26,36 +58,49 @@ export async function run(ctx: Context) {
         ),
       ),
     )
-      .then(x => (console.log(x), x))
-      .then(results =>
+      .then((results: Array<{ block: IEthBlock; [key: string]: any }>) =>
         results.reduce((flat, current) => flat.concat(current), []),
       )
-      .then(flat =>
+      .then((flat: any[]) =>
         flat.filter(el => el.transactionHash && el.type !== 'reward'),
       )
-      .then(flat =>
-        flat.map(
-          r =>
-            ({
-              version: 1,
-
-              from: [r.action.from],
-              to: [r.type === 'call' ? r.action.to : '0x0'],
-              input: r.type === 'call' ? r.action.input : r.action.init,
-              timestamp: r.block.timestamp,
-              result: r.result,
-              type: r.type,
-              txHash: r.transactionHash,
-              trace: r.traceAddress,
-              id: r.transactionHash + r.traceAddress,
-            } as IEthTrace),
-        ),
+      .then((flat: any[]) =>
+        flat.map<IEthTrace>(r => ({
+          raw: {
+            ...r,
+            block: null,
+          },
+          meta: {},
+          version: 2,
+          from: getFrom(r),
+          to: getTo(r),
+          input: getInput(r),
+          timestamp: r.block.timestamp,
+          result: r.result || {},
+          type: r.type,
+          txHash: r.transactionHash,
+          trace: r.traceAddress,
+          parsed: {},
+          id: r.transactionHash + r.traceAddress,
+          blockHash: r.block.hash,
+          blockHeight: r.block.height,
+        })),
       );
 
     if (traces.length > 0) {
-      console.log(`New traces for ${traces.length} transactions`);
-      console.log(JSON.stringify(traces, null, 2));
-      await ctx.tables.traces.insert(<any>traces).run(ctx.connection);
+      ctx.logger.log(
+        `New traces for ${traces.length} transactions (${new Date(
+          traces[0].timestamp * 1000,
+        )}) `,
+      );
+      try {
+        await ctx.tables.traces.insert(<any>traces).run(ctx.connection);
+      } catch (e) {
+        console.log(
+          JSON.stringify(traces.filter(t => t.type === 'suicide'), null, 2),
+        );
+        console.log(e);
+      }
     }
   }
 }

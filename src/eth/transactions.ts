@@ -15,8 +15,8 @@ export async function run(ctx: Context) {
       .run(ctx.connection);
     cachedConnection = ctx.connection;
     stream.each(async (_, el) => {
-      console.log('unknown tx: ', el);
-      const tx = await ctx.web3.eth
+      ctx.logger.log(`New tx ${el.hash} in ${el.blockHeight} block`);
+      await ctx.web3.eth
         .getTransaction(el)
         .then(
           trx =>

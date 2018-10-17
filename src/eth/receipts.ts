@@ -4,15 +4,21 @@ import { IEthTransaction } from './eth-types';
 
 export async function run(ctx: Context) {
   const timedTransactions = await ctx.tables.trx
-    .getAll(0, { index: 'timestamp' })
+    .getAll(0, { index: 'hasReceipts' })
     .map<IEthTransaction>(doc =>
       doc.merge<IEthTransaction>({
-        timestamp: ctx.tables.blocks.get(doc('blockHeight'))('timestamp'),
+        timestamp: ctx.tables.blocks
+          .get(doc('blockHeight'))
+          .default({ timestamp: 0 } as any)('timestamp'),
       } as any),
     )
-    .limit(10)
+    .limit(parseInt(process.env.ETH_MAX_BLOCKS || '20'))
     .run(ctx.connection)
     .then(cursor => cursor.toArray());
+
+  if (timedTransactions.length === 0) return;
+
+  ctx.logger.ver(`get receipts of: ${timedTransactions.length}`);
 
   const timedAndReceiptTransactions = await Promise.all(
     timedTransactions.map(tx =>
@@ -49,6 +55,7 @@ export async function run(ctx: Context) {
           tx.meta.cumulativeGasUsed = receipt.cumulativeGasUsed;
           tx.meta.logs = receipt.logs.map(log => <any>log['id']);
           tx.meta.status = receipt.status;
+          tx.receipts = 1;
           return tx;
         }),
     ),

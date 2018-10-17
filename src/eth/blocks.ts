@@ -2,6 +2,7 @@ import * as r from 'rethinkdb';
 import { IBlock } from '../types';
 import { Context } from './app';
 import { IEthBlock, IEthTransaction } from './eth-types';
+import { or, important } from 'utils';
 
 export async function run(ctx: Context) {
   const latestInDb = await r
@@ -16,6 +17,10 @@ export async function run(ctx: Context) {
 
   const latestInChain = await ctx.web3.eth.getBlockNumber();
 
+  ctx.logger.log(
+    `ETH outdated on ${latestInChain - latestInDb} blocks (${latestInDb})`,
+  );
+
   // TODO: backward check hashes
   // Syncing unkown blocks:
   await syncBlocks(ctx, latestInDb, latestInChain);
@@ -23,67 +28,66 @@ export async function run(ctx: Context) {
 
 async function syncBlocks(ctx: Context, since: number, to: number) {
   // TODO: configure batch size with configuration
-  const numOfBlocks = Math.min(to - since, 20);
+  const numOfBlocks = Math.min(
+    to - since,
+    parseInt(process.env.ETH_MAX_BLOCKS || '20'),
+  );
   if (numOfBlocks) {
     const tasks = Array(numOfBlocks)
       .fill(0)
       .map((_, offset) => ctx.web3.eth.getBlock(since + 1 + offset, true));
     const blocks = await Promise.all(tasks);
 
-    console.log(
-      `Got ${blocks.length} new blocks (from height ${since} to ${since +
-        numOfBlocks})`,
-    );
-
-    // TODO: DUXI IT
-    // export interface BlockHeader {
-    // 	number: number;
-    // 	hash: string;
-    // 	parentHash: string;
-    // 	nonce: string;
-    // 	sha3Uncles: string;
-    // 	logsBloom: string;
-    // 	transactionRoot: string;
-    // 	stateRoot: string;
-    // 	receiptRoot: string;
-    // 	miner: string;
-    // 	extraData: string;
-    // 	gasLimit: number;
-    // 	gasUsed: number;
-    // 	timestamp: number;
-    // }
-    // export interface Block extends BlockHeader {
-    // 	transactions: Transaction[];
-    // 	size: number;
-    // 	difficulty: number;
-    // 	totalDifficulty: number;
-    // 	uncles: string[];
-    // }
     const nonTrxBlocks = blocks.map<IEthBlock>(block => ({
       version: 1,
 
-      author: block.miner.toLowerCase(),
-      difficulty: block.difficulty.toString(),
-      gasLimit: block.gasLimit,
-      gasUsed: block.gasUsed,
-      hash: block.hash,
-      height: block.number,
-      logsBloom: block.logsBloom,
-      parentHash: block.parentHash,
-      receiptsRoot: <any>block['receiptsRoot'],
-      sha3Uncles: block.sha3Uncles,
-      signature: <any>block['signature'],
-      size: block.size,
-      stateRoot: block.stateRoot,
-      timestamp: block.timestamp,
-      totalDifficulty: block.totalDifficulty.toString(),
-      transactions: block.transactions.map(trx => trx.hash),
-      transactionsRoot: <any>block['transactionsRoot'],
-      uncles: block.uncles,
+      author: important(block.miner.toLowerCase(), 'miner is important'),
+      difficulty: or(block.difficulty.toString(), '0'),
+      gasLimit: or(block.gasLimit, 0),
+      gasUsed: or(block.gasUsed, 0),
+      hash: important(block.hash),
+      height: important(block.number),
+      logsBloom: or(
+        block.logsBloom,
+        '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+        () => ctx.logger.war(`logsBloom not found in block ${block.number}`),
+      ),
+      parentHash: important(block.parentHash),
+      receiptsRoot: or(
+        block['receiptsRoot'],
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        () => ctx.logger.war(`receiptsRoot not found in block ${block.number}`),
+      ),
+      sha3Uncles: or(
+        block.sha3Uncles,
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        () => ctx.logger.war(`sha3uncles not found in block ${block.number}`),
+      ),
+      signature: or(
+        block['signature'],
+        '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+        // () => ctx.logger.war(`signature not found in block ${block.number}`),
+      ),
+      size: or(block.size, 0),
+      stateRoot: or(
+        block.stateRoot,
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        () => ctx.logger.war(`stateRoot not found in block ${block.number}`),
+      ),
+      timestamp: important(block.timestamp),
+      totalDifficulty: or(block.totalDifficulty.toString(), '0'),
+      transactions: important(block.transactions).map(trx => trx.hash),
+      transactionsRoot: or(
+        block['transactionsRoot'],
+        '0x0000000000000000000000000000000000000000000000000000000000000000',
+        () =>
+          ctx.logger.war(`transactionsRoot not found in block ${block.number}`),
+      ),
+      uncles: or(block.uncles, []),
     }));
 
     const transactions = blocks
-      .map(block => block.transactions)
+      .map(block => block.transactions.map(tx => ({ ...tx, block })))
       .reduce((flat, map) => flat.concat(map), [])
       .map<IEthTransaction>(trx => ({
         version: 1,
@@ -98,12 +102,11 @@ async function syncBlocks(ctx: Context, since: number, to: number) {
         nonce: trx.nonce,
         to: [trx.to],
         from: [trx.from],
-        signature: trx.s + trx.r + trx.v,
-        timestamp: 0,
+        signature: trx.s + trx.r + trx.v || '',
+        timestamp: trx.block.timestamp,
       }));
 
     if (transactions.length) {
-      console.log(`Insert ${transactions.length} new transactions`);
       await ctx.tables.trx
         .insert(<any>transactions, { conflict: 'update' })
         .run(ctx.connection);
