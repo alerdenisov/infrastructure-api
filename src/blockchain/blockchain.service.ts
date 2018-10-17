@@ -13,12 +13,10 @@ export class BlockchainService {
   }
 
   private async initialize() {
-    console.log('initialize blockchain service');
     this.connection = await r.connect({
       host: config.rethinkdb.host,
       port: config.rethinkdb.port,
     });
-    console.log('connected...');
     this.ready = true;
   }
 
@@ -47,11 +45,55 @@ export class BlockchainService {
       )
       .run(this.connection);
 
-    console.log(latest);
-
     return {
       height: latest,
     };
+  }
+
+  async getBlocks(
+    chain: string,
+    filled: boolean = false,
+    populateTx: boolean = false,
+  ) {
+    if ((await this.chains()).indexOf(chain) === -1) {
+      throw new Error('Unkown chain');
+    }
+    await waitFor(() => this.ready);
+
+    let request: any = r
+      .db(chain)
+      .table('blocks')
+      .orderBy({ index: r.desc('height') })
+      .limit(20);
+
+    if (populateTx) {
+      request = request.merge(block => ({
+        transactions: block('transactions').map(hash =>
+          r
+            .db(chain)
+            .table('transactions')
+            .get(hash)
+            .merge(doc => ({
+              logs: doc('meta')
+                .default({ logs: [] })('logs')
+                .map(id =>
+                  r
+                    .db(chain)
+                    .table('logs')
+                    .get(id),
+                )
+                .coerceTo('array'),
+              traces: r
+                .db(chain)
+                .table('traces')
+                .getAll(doc('txHash').coerceTo('string'), { index: 'txHash' })
+                .coerceTo('array'),
+            })),
+        ),
+      }));
+    }
+
+    return request.run(this.connection).then(cursor => cursor.toArray());
   }
 
   async getTraces(chain: string, address: string) {
@@ -60,22 +102,34 @@ export class BlockchainService {
     }
     await waitFor(() => this.ready);
 
-    console.log(chain, address);
-
     return (r
       .db(chain)
       .table('traces')
-      .getAll(address, { index: 'from' })
+      .getAll(address.toLowerCase(), { index: 'from' })
       .union(
         r
           .db(chain)
           .table('traces')
-          .getAll(address, { index: 'to' }),
+          .getAll(address.toLowerCase(), { index: 'to' }),
+      )
+      .union(
+        r
+          .db(chain)
+          .table('logs')
+          .getAll(address.toLowerCase(), { index: 'involved' }),
       )
       .orderBy('timestamp')('txHash') as any)
       .distinct()
       .eqJoin(doc => doc, r.db(chain).table('transactions'))('right')
       .merge(doc => ({
+        logs: doc('meta')('logs')
+          .map(id =>
+            r
+              .db(chain)
+              .table('logs')
+              .get(id),
+          )
+          .coerceTo('array'),
         traces: r
           .db(chain)
           .table('traces')

@@ -21,7 +21,7 @@ export interface Context {
   db: r.RDb;
 }
 
-async function setup(): Promise<Context> {
+async function setup(...args: string[]): Promise<Context> {
   await mongoose.connect(process.env.EOS_MONGO_URI);
   const connection = await r.connect({
     host: config.rethinkdb.host,
@@ -98,9 +98,9 @@ const tasks = {
   tracesRun,
 };
 
-export async function run() {
+export async function run(...args: string[]) {
   // TODO: setup provider from providen configuration
-  let ctx = await setup();
+  let ctx = await setup(...args);
 
   while (true) {
     try {
