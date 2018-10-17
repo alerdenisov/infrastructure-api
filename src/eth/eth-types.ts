@@ -7,23 +7,14 @@ import {
   Hash,
   ITransaction,
   ITrace,
+  ILog,
   IMeta,
 } from 'types';
 
-export interface IEthLog extends IMeta {
-  id: string;
+export interface IEthLog extends ILog {
   address: Address;
-  blockHash: Hash;
-  blockHeight: number;
-  data: Binary;
-  logIndex: number;
   topics: Binary[];
-  txHash: Hash;
-  txIndex: number;
   txLogIndex: HexNumber;
-  type: string;
-  parsedVersion: number;
-  parsed: any;
 }
 
 export interface IEthBlock extends IBlock {
@@ -43,6 +34,7 @@ export interface IEthTransaction extends ITransaction {
   nonce: number;
   gasPrice: string;
   gas: number;
+  receipts?: number;
 }
 
 export interface CallResult {
@@ -57,6 +49,7 @@ export interface CreateResult {
 }
 
 export interface IEthTrace extends ITrace {
+  raw: any;
   type: string;
   result: CallResult | CreateResult;
 }

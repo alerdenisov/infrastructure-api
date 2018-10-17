@@ -12,6 +12,20 @@ export interface IMeta {
   meta?: any;
 }
 
+export interface ILog extends IMeta {
+  id: string;
+  involved: Address[];
+  blockHash: Hash;
+  blockHeight: number;
+  txHash: Hash;
+  txIndex: number;
+  logIndex: number;
+  data: Binary;
+  type: string;
+  parsedVersion?: number;
+  parsed?: any;
+}
+
 export interface IBlock extends IMeta {
   hash: Hash;
   parentHash: Hash;
@@ -36,9 +50,10 @@ export interface ITransaction extends IMeta {
 }
 
 export interface ITrace extends IMeta {
-  id: Hash;
   type: string;
   txHash: Hash;
+  blockHash: Hash;
+  blockHeight: number;
   from: Address[];
   to: Address[];
   input: Binary;
