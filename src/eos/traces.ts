@@ -30,7 +30,8 @@ function flatRecursive(
     parsed: branch.act,
     input: branch.receipt.act_digest,
     type: 'call',
-    id: branch.trx_id + path.join(''),
+    blockHash: '',
+    blockHeight: 0,
     authorization: branch.act.authorization,
     console: branch.console,
 
