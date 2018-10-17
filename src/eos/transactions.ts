@@ -23,7 +23,6 @@ export async function run(ctx: Context) {
 
     cachedConnection = ctx.connection;
     stream.each(async (_, hash) => {
-      console.log(`New transaction ${hash}`);
       const trace = await TransactionTraceModel.findOne({ id: hash }).exec();
       const tx = await TransactionModel.findOne({ trx_id: hash }).exec();
       const block = await BlockModel.findOne({
